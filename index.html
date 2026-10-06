@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>NICT Selfie Point</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #003399;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: white;
+            text-align: center;
+        }
+        h1 { margin: 10px 0; font-size: 24px; }
+        p { margin: 5px 0 20px 0; font-size: 14px; }
+        
+        #video-container {
+            position: relative;
+            width: 90vw;
+            max-width: 400px;
+            height: 60vh;
+            max-height: 600px;
+            background: url('background.jpg') no-repeat center center;
+            background-size: contain;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* This creates a circular cutout in the middle of the poster for the selfie */
+        #video {
+            width: 55%;
+            height: 35%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        #canvas { display: none; }
+
+        .buttons {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 90vw;
+            max-width: 400px;
+        }
+
+        button, a {
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+        }
+
+        #captureBtn { background-color: #FFD700; color: #003399; }
+        #downloadBtn { background-color: #25D366; color: white; display: none; }
+        #whatsappBtn { background-color: #128C7E; color: white; display: none; }
+    </style>
+</head>
+<body>
+
+    <h1>NICT Gadag Selfie Point</h1>
+    <p>Position your face in the circle and click Capture!</p>
+
+    <div id="video-container">
+        <video id="video" autoplay playsinline></video>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div class="buttons">
+        <button id="captureBtn">?? Capture Selfie</button>
+        <button id="downloadBtn">?? Save Photo</button>
+        <a id="whatsappBtn" href="#" target="_blank">?? Send to NICT on WhatsApp</a>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const whatsappBtn = document.getElementById('whatsappBtn');
+        const ctx = canvas.getContext('2d');
+
+        let bgImage = new Image();
+        bgImage.src = 'background.jpg';
+
+        // Start front-facing camera
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } })
+            .then(stream => { video.srcObject = stream; })
+            .catch(err => { 
+                alert("Camera access denied or not available. Please ensure you are using HTTPS and have granted camera permissions."); 
+            });
+
+        captureBtn.addEventListener('click', () => {
+            // Set canvas to match the aspect ratio of your poster (e.g., 1080x1440)
+            canvas.width = 1080; 
+            canvas.height = 1440; 
+
+            // Draw the NICT Poster background
+            ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+
+            // Draw the selfie in a circular shape in the center
+            // Adjust these values (x, y, radius) to perfectly position the selfie on the white space
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2.2; // Move up or down
+            const radius = 250; // Size of the selfie circle
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, true);
+            ctx.closePath();
+            ctx.clip();
+
+            // Draw the video frame inside the circle
+            ctx.drawImage(video, centerX - radius, centerY - radius, radius * 2, radius * 2);
+            ctx.restore();
+
+            // Add a white border around the selfie
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2, true);
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 10;
+            ctx.stroke();
+
+            // Convert canvas to an image URL
+            const imageDataUrl = canvas.toDataURL('image/png');
+
+            // Show buttons
+            downloadBtn.style.display = 'block';
+            whatsappBtn.style.display = 'block';
+
+            // Set up Download link
+            downloadBtn.onclick = () => {
+                const link = document.createElement('a');
+                link.download = 'NICT_Selfie.png';
+                link.href = imageDataUrl;
+                link.click();
+            };
+
+            // Set up WhatsApp link (Note: WhatsApp does not allow automatic image attachment via URL for security)
+            // This opens WhatsApp with your number, and the user just has to attach the downloaded photo.
+            whatsappBtn.href = "https://wa.me/919886590681?text=Hi%20NICT%20Gadag!%20Here%20is%20my%20Selfie%20Point%20photo.";
+            
+            // Hide capture button so they don't take multiple
+            captureBtn.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
